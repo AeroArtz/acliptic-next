@@ -28,7 +28,7 @@ interface Stream {
   created_at?: string
   updated_at?: string
   thumbnail_url: string | null
-  clipCount: ClipCount[]
+  clipCount: ClipCount[] | number | null
 }
 
 interface ApiResponse {
@@ -63,13 +63,29 @@ function formatStreamTime(streamDate: Date): string {
   }
 }
 
-// Helper function to extract clip count from ClipCount array
-function extractClipCount(clipCount: ClipCount[]): number {
-  if (!clipCount || clipCount.length === 0) {
+// Helper function to extract clip count from various data types
+function extractClipCount(clipCount: ClipCount[] | number | null | undefined): number {
+  // Handle null or undefined
+  if (!clipCount) {
     return 0
   }
-  // Sum all counts in the array, or take the first one depending on your data structure
-  return clipCount.reduce((total, item) => total + item.count, 0)
+
+  // Handle if it's already a number
+  if (typeof clipCount === "number") {
+    return clipCount
+  }
+
+  // Handle if it's an array
+  if (Array.isArray(clipCount)) {
+    if (clipCount.length === 0) {
+      return 0
+    }
+    // Sum all counts in the array
+    return clipCount.reduce((total, item) => total + (item?.count || 0), 0)
+  }
+
+  // Fallback
+  return 0
 }
 
 // Skeleton Components
@@ -161,6 +177,10 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
         setStreamsData(data)
       } catch (error) {
         setStreamsError(error as Error)
+        toast.error("Failed to load streams", {
+          description: "Please try refreshing the page",
+          duration: 4000,
+        })
       } finally {
         setStreamsLoading(false)
       }
@@ -226,6 +246,10 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
     } catch (error) {
       const err = error as Error
       console.error("Error starting process:", err)
+      toast.error("Failed to start clipping", {
+        description: "Please try again or check your connection",
+        duration: 4000,
+      })
     }
   }
 
@@ -241,7 +265,7 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
         title: stream.stream_title || "Untitled Stream",
         thumbnail: stream.thumbnail_url || "/podcast-thumbnail.png",
         streamTime: formatStreamTime(new Date(stream?.created_at || "")),
-        clipCount: extractClipCount(stream.clipCount), // Fix: Extract number from ClipCount array
+        clipCount: extractClipCount(stream.clipCount), // Fixed: Now handles all data types
         autoUploaded: stream.auto_upload || false,
       }))
 
