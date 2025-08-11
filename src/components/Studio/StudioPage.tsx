@@ -1,4 +1,5 @@
 "use client"
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -60,6 +61,15 @@ function formatStreamTime(streamDate: Date): string {
     const days = Math.floor(diffInHours / 24)
     return `streamed ${days} ${days === 1 ? "day" : "days"} ago`
   }
+}
+
+// Helper function to extract clip count from ClipCount array
+function extractClipCount(clipCount: ClipCount[]): number {
+  if (!clipCount || clipCount.length === 0) {
+    return 0
+  }
+  // Sum all counts in the array, or take the first one depending on your data structure
+  return clipCount.reduce((total, item) => total + item.count, 0)
 }
 
 // Skeleton Components
@@ -142,7 +152,6 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
     const fetchStreamsData = async () => {
       setStreamsLoading(true)
       setStreamsError(null)
-
       try {
         const response = await fetch(`/api/streamers/${user_id}/streams`)
         if (!response.ok) {
@@ -163,7 +172,6 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
   // Fetch plugin state manually
   const fetchPluginState = async () => {
     try {
-      // marker get no. of active streams from streams table associated with streamer , if atleast one set to active
       const response = await postFetcher("/api/user/plugin_state", user_id)
       setPluginState(response)
     } catch (error) {
@@ -186,15 +194,16 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
           auto_upload: true,
         }),
       })
-      // get stream ID from this
+
       const responseData1 = await response1.json()
       console.log("res 1: ", responseData1)
+
       let stream_id
       if (responseData1.confirmation === "success") {
         stream_id = responseData1.data.stream_id
       }
+
       // Call the API to launch plugin
-      // pass stream ID also
       const response2 = await fetch("/api/launch-plugin/twitch/live", {
         method: "POST",
         headers: {
@@ -205,33 +214,9 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
           stream_id: stream_id,
         }),
       })
+
       const responseData2 = await response2.json()
       console.log(responseData2)
-      /*
-            const response = await fetch('/api/streams/twitch/live', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    user_id : true,
-                    twitch_url: ''
-                })
-            });
-            const responseData = await response.json() as StreamApiResponse;
-            if (!responseData.success) {
-                if (responseData.message?.includes("not live") ||
-                     responseData.error?.includes("not live") ||
-                     responseData.details?.includes("not available")) {
-                    setStreamOffline(true);
-                    throw new Error(responseData.message || "Stream or video is not available. Please check your input.");
-                } else {
-                    throw new Error(responseData.error || responseData.details || responseData.message || 'Failed to start processing');
-                }
-            }
-                        
-            router.push(`/Studio/Plugin?platform=${selectedSourceData.platform}&contentType=${selectedSourceData.contentType}&user_id=${user_id}`);
-            */
     } catch (error) {
       const err = error as Error
       console.error("Error starting process:", err)
@@ -242,6 +227,7 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
   useEffect(() => {
     if (streamsData?.data) {
       const streams = streamsData.data
+
       // Transform streams data to podcasts format
       const formattedPodcasts: Podcast[] = streams.map((stream: Stream, index: number) => ({
         streamId: stream.stream_id,
@@ -249,7 +235,7 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
         title: stream.stream_title || "Untitled Stream",
         thumbnail: stream.thumbnail_url || "/podcast-thumbnail.png",
         streamTime: formatStreamTime(new Date(stream?.created_at || "")),
-        clipCount: stream.clipCount || 0,
+        clipCount: extractClipCount(stream.clipCount), // Fix: Extract number from ClipCount array
         autoUploaded: stream.auto_upload || false,
       }))
 
@@ -290,9 +276,8 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
               </h1>
             </div>
             <div className="w-full px-8 pb-8 flex justify-between items-end">
-              <div className="flex-1"></div> {/* Spacer */}
+              <div className="flex-1"></div>
               <div className="flex justify-end w-full max-w-[1400px]">
-                {/* Integrated Action Buttons */}
                 <div className="flex flex-col sm:flex-row justify-between w-full max-w-[1400px] gap-4">
                   <div className="flex justify-start">
                     <Button
@@ -357,7 +342,6 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
             <Link
               key={podcastIndex}
               href={{
-                //marker
                 pathname: `/Studio/stream/${podcast.streamId}/clips`,
               }}
               className="block w-full"

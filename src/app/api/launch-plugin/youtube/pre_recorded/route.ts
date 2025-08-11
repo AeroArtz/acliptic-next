@@ -9,6 +9,20 @@ import { socialMediaHandle, users } from "@/db/schema/users";
 import { eq } from "drizzle-orm";
 
 
+// Define the user presets type
+interface UserPresets {
+  captions?: boolean | string
+  // Add other preset properties as needed
+}
+
+// Define the user type with presets
+interface UserWithPresets {
+  id: string
+  username?: string
+  presets?: UserPresets | null
+  // Add other user properties as needed
+}
+
 export async function POST(req: NextRequest) {
     
     try {
@@ -40,27 +54,34 @@ export async function POST(req: NextRequest) {
             }, { status: 404 });
         }
 
-        let platforms : String[] = []
-        if (auto_upload){
-            // query db to get platforms with connected accounts
-            const result = await db.select({platform_id: socialMediaHandle.platform_id}).from(socialMediaHandle).where(eq(socialMediaHandle.user_id, user_id));
 
-            // only if user has social media accounts connected
-            if (result.length > 0) {
+        const platforms: string[] = []
+        if (auto_upload) {
+        // query db to get platforms with connected accounts
+        const platformResult = await db
+            .select({ platform_id: socialMediaHandle.platform_id })
+            .from(socialMediaHandle)
+            .where(eq(socialMediaHandle.user_id, user_id))
 
-                let id_to_platform = {
-                    703 : 'instagram',
-                    701 : 'youtube'
-                }
-
-                result.forEach(({platform_id}) => platforms.push(id_to_platform[platform_id]))
-
+        // only if user has social media accounts connected
+        if (platformResult.length > 0) {
+            const id_to_platform: Record<number, string> = {
+            703: "instagram",
+            701: "youtube",
             }
-
+            platformResult.forEach(({ platform_id }) => {
+            const platform = id_to_platform[platform_id]
+            if (platform) {
+                platforms.push(platform)
+            }
+            })
+        }
         }
         
-        const username = result[0]?.username;
-        const captions = result[0]?.presets?.captions;
+        // Cast the user result to our typed interface and handle presets safely
+        const user = result[0] as UserWithPresets
+        const username = user?.username
+        const captions = user?.presets?.captions || false // Provide a default value
 
         if (!username) {
             return NextResponse.json({

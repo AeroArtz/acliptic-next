@@ -1,19 +1,18 @@
-// src/app/Studio/stream/[streamIndex]/clips/page.tsx
-import { SessionProvider } from "next-auth/react";
-import StudioClipsPageComponent from '@/components/Studio/StudioClipsPage'
+import { SessionProvider } from "next-auth/react"
+import StudioClipsPageComponent from "@/components/Studio/StudioClipsPage"
 
-  interface StudioClipsPageProps {
-    params: {
-      stream_id: string;
-    };
-  }
-export default function StudioClipsPage({ params } : StudioClipsPageProps) {
+interface StudioClipsPageProps {
+  params: Promise<{
+    stream_id: string
+  }>
+}
 
-  const { stream_id } = params   
+export default async function StudioClipsPage({ params }: StudioClipsPageProps) {
+  const { stream_id } = await params
 
   return (
     <SessionProvider>
-      <StudioClipsPageComponent stream_id = {stream_id}/>
+      <StudioClipsPageComponent stream_id={stream_id} />
     </SessionProvider>
-  );
+  )
 }
