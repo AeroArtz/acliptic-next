@@ -10,7 +10,7 @@ import Navigation from "@/components/afterNav"
 import PluginDialog from "@/components/Studio/pluginDialog"
 import PresetDialog from "@/components/Studio/PresetDialog"
 import { LoadingScreen, SkeletonLoader } from "@/components/LoadingSkeletonScreen"
-import { Toaster } from "sonner"
+import { toast, Toaster } from "sonner"
 
 // Type definitions
 interface ClipCount {
@@ -217,6 +217,12 @@ export default function StudioPage({ user_id, twitch_username, youtube_channel_i
 
       const responseData2 = await response2.json()
       console.log(responseData2)
+
+      // Show success toast when both API calls complete successfully
+      toast.success("Clipping started successfully!", {
+        description: "Your stream clipping has been initiated",
+        duration: 4000,
+      })
     } catch (error) {
       const err = error as Error
       console.error("Error starting process:", err)

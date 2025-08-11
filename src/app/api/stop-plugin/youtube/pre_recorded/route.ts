@@ -46,11 +46,11 @@ export async function POST(req: NextRequest) {
 
         // send api request
 
-            const response = await fetch(`http://127.0.0.1:8888/${user_id}/youtube/plugin/pre_recorded/stop`, {
+            const response = await fetch(`${process.env.PY_BACKEND_URL}/${user_id}/youtube/plugin/pre_recorded/stop`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NDkyMDUyNjR9.EWLMHwRlBCr4P_Jog-dmuo2Hh4JGTK8tVCmqIuTs4ig'
+                    'Authorization': `Bearer ${process.env.PY_BACKEND_JWT_SECRET}`,
 
                 },
                 body: JSON.stringify({
